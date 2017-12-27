@@ -1,18 +1,27 @@
-var camera, scene, renderer, gplane=false, clickMarker=false;
+var camera, scene, renderer, gplane=false, clickMarker=false,stats;
 var controls,time = Date.now();
 init();
 animate();
 function init() {
     var shadowRes = 2048;
-    projector = new THREE.Projector();
-
-    container = document.createElement( 'div' );
-    document.body.appendChild( container );
+    var darkColor = new THREE.Color(0x6d8392).multiplyScalar( 1.5 );
+    //projector = new THREE.Projector();
 
     // scene
     scene = new THREE.Scene();
+
+    //Renderer
     renderer = new THREE.WebGLRenderer( { antialias: true } );
-    scene.fog = new THREE.Fog( 0x000000, 50, 150 );
+    renderer.setSize( window.innerWidth, window.innerHeight );
+    renderer.setClearColor(0x333333, 0.1);
+    renderer.gammaInput = true;
+    renderer.gammaOutput = true;
+    renderer.shadowMap.enabled = true;
+    var container = document.getElementById('scene');
+    container.appendChild(renderer.domElement);
+
+    //Fog
+    scene.fog = new THREE.Fog( 0x000000, 50, 200 );
 
     // camera
     camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 1, 1000);
@@ -52,8 +61,7 @@ function init() {
     scene.add( hemi );
 
     //ground
-    var darkColor = new THREE.Color(0x333742).multiplyScalar( 1.5 );
-    var groundBox = new THREE.Mesh(new THREE.BoxGeometry(1000, 40, 1000), new THREE.MeshPhongMaterial({
+    var groundBox = new THREE.Mesh(new THREE.BoxGeometry(10000, 40, 10000), new THREE.MeshPhongMaterial({
      color: darkColor
     }));
     groundBox.castShadow = false;
@@ -62,24 +70,36 @@ function init() {
     scene.add(groundBox);
 
     //test box
-    var box = new THREE.Mesh(new THREE.BoxGeometry(10,10,10), new THREE.MeshBasicMaterial({
+    /*var box = new THREE.Mesh(new THREE.BoxGeometry(10,10,10), new THREE.MeshBasicMaterial({
     color: 'red',
     wireframe: false,
     side: 2
     }))
     box.position.y = 5;
     box.castShadow = true;
-    scene.add(box);
+    scene.add(box);*/
+    //Add other items to scene
+    var loader = new THREE.STLLoader();
+				loader.load( 'models/Octane_Original.stl', function ( geometry ) {
+
+					var material = new THREE.MeshPhongMaterial( { color: darkColor, specular: 0x111111, shininess: 200 } );
+					var mesh = new THREE.Mesh( geometry, material );
+
+					//mesh.position.set( 0, - 0.25, 0.6 );
+					mesh.rotation.set( -Math.PI / 2,0,0);
+					mesh.scale.set( 0.5, 0.5, 0.5 );
+
+					mesh.castShadow = false;
+					//mesh.receiveShadow = true;
+
+					scene.add( mesh );
+
+				} );
 
 
-    renderer.setSize( window.innerWidth, window.innerHeight );
-    renderer.setClearColor(0x333333, 0.1);
-
-    container.appendChild( renderer.domElement );
-
-    renderer.gammaInput = true;
-    renderer.gammaOutput = true;
-    renderer.shadowMap.enabled = true;
+    //stats
+    stats = new Stats();
+    container.appendChild(stats.dom);
 
     window.addEventListener( 'resize', onWindowResize, false );
 
@@ -89,6 +109,7 @@ function init() {
 function animate() {
     requestAnimationFrame( animate );
     controls.update(); // required if controls.enableDamping = true, or if controls.autoRotate = true
+    stats.update();
     render();
 }
 
