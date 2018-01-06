@@ -1,7 +1,7 @@
 /*
  * Game Cannon.js module
  *
- * A class for the Cannon.js setup providing rigid body management, collision detection extensions and some helpers
+ * A class for the Cannon.js setup providing body management, collision detection extensions and some helpers
  */
 
 window.game = window.game || {};
@@ -10,7 +10,7 @@ window.game.cannon = function() {
 	var _cannon = {
 		// Attributes
 
-		// Cannon.js world holding all rigid bodies of the level
+		// Cannon.js world holding all bodies of the level
 		world: null,
 		// Bodies correspond to the physical objects inside the Cannon.js world
 		bodies: [],
@@ -52,7 +52,7 @@ window.game.cannon = function() {
 			_cannon.world.broadphase = new CANNON.NaiveBroadphase();
 			_cannon.world.solver.iterations = 5;
 
-			// Create empty arrays that will later be populated with rigid bodies and mesh references
+			// Create empty arrays that will later be populated with bodies and mesh references
 			_cannon.bodies = [];
 			_cannon.visuals = [];
 			_cannon.bodyCount = 0;
@@ -66,7 +66,7 @@ window.game.cannon = function() {
 			};
 		},
 		getCollisions: function(index) {
-			// Count the collisions of the provided index that is connected to a rigid body in the Cannon.js world
+			// Count the collisions of the provided index that is connected to a body in the Cannon.js world
 			var collisions = 0;
 
 			for (var i = 0; i < _cannon.world.collisionMatrix.length; i++) {
@@ -77,26 +77,29 @@ window.game.cannon = function() {
 
 			return collisions;
 		},
-		rotateOnAxis: function(rigidBody, axis, radians) {
+		rotateOnAxis: function(Body, axis, radians) {
 			// Equivalent to THREE's Object3D.rotateOnAxis
 			var rotationQuaternion = new CANNON.Quaternion();
 			rotationQuaternion.setFromAxisAngle(axis, radians);
-			rigidBody.quaternion = rotationQuaternion.mult(rigidBody.quaternion);
+			Body.quaternion = rotationQuaternion.mult(Body.quaternion);
 		},
-		createRigidBody: function(options) {
-			// Creates a new rigid body based on specific options
-			var rigidBody  = new CANNON.RigidBody(options.mass, options.shape, options.physicsMaterial);
-			rigidBody.position.set(options.position.x, options.position.y, options.position.z);
+		createBody: function(options) {
+			// Creates a new body based on specific options
+			var Body  = new CANNON.Body({
+				mass: options.mass,
+				shape: options.shape,
+				material:options.physicsMaterial});
+			Body.position.set(options.position.x, options.position.y, options.position.z);
 
 			// Apply a rotation if set by using Quaternions
 			if (options.rotation) {
-				rigidBody.quaternion.setFromAxisAngle(options.rotation[0], options.rotation[1]);
+				Body.quaternion.setFromAxisAngle(options.rotation[0], options.rotation[1]);
 			}
 
 			// Add the entity to the scene and world
-			_cannon.addVisual(rigidBody, options.meshMaterial, options.customMesh);
+			_cannon.addVisual(Body, options.meshMaterial, options.customMesh);
 
-			return rigidBody;
+			return Body;
 		},
 		createPhysicsMaterial: function(material, friction, restitution) {
 			// Create a new material and add a Cannon ContactMaterial to the world always using _cannon.playerPhysicsMaterial as basis
@@ -111,8 +114,8 @@ window.game.cannon = function() {
 			// Initialize the mesh or use a provided custom mesh
 			var mesh = customMesh || null;
 
-			// Check for rigid body and convert the shape to a THREE.js mesh representation
-			if (body instanceof CANNON.RigidBody && !mesh) {
+			// Check for body and convert the shape to a THREE.js mesh representation
+			if (body instanceof CANNON.Body && !mesh) {
 				mesh = _cannon.shape2mesh(body.shape, material);
 			}
 
@@ -350,7 +353,7 @@ window.game.cannon = function() {
 
 				bboxMeshCache.hideCached();
 			};
-			
+
 			that.init = function() {
 				var updatePhysics = _cannon.updatePhysics;
 
